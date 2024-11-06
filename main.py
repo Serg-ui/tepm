@@ -50,7 +50,11 @@ def get_parent_sections(building_id: int) -> list[Section]:
     sections = Section.objects.prefetch_related('section').filter(
         building_id=building_id, parent__isnull=True
     ).annotate(
-        budget_parent=Sum(F('section__price') * F('section__count'))
+        budget_parent=Sum(F('section__price') * F('section__count')),
+        budget_child=Subquery(
+            Section.objects.filter(parent=OuterRef('pk')).annotate(budget=Sum(F('section__price') * F('section__count'))).values('budget')
+        ),
+        budget_all=F('budget_parent') + F('budget_child')
     )
     return list(sections)
 
